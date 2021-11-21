@@ -128,7 +128,7 @@ def eda_func(df):
     non_numeric_columns = list(set(df.select_dtypes(['object']).columns).difference(dropcols))
     non_numeric_columns.append(None)
     options2 = st.selectbox('Что хотим сделать?',
-             ['Посмотреть зависимости (EDA)', 'Кластеризация'], index=1)
+             ['Посмотреть зависимости (EDA)', 'Кластеризация'], index=0)
     if options2 == 'Посмотреть зависимости (EDA)':
         visualisation(df, numeric_columns, non_numeric_columns)
     elif options2 == 'Кластеризация': 
