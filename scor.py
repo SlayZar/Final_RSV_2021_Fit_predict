@@ -107,14 +107,11 @@ def hierarch(customers):
                                orientation='left',
                                linkagefun=lambda x: sch.linkage(np.array(vis_df[[0,1]]), "average"),)
     fig.update_layout(width=800, height=1600, font_size=8)
-    fig.show()
-    plotly.offline.plot(fig, filename='cluster.html')
+    # fig.show()
+    # plotly.offline.plot(fig, filename='cluster.html')
     HtmlFile = open("cluster.html", 'r', encoding='utf-8')
-    components.html(HtmlFile.read())
-    #file = open("cluster.html", "r").read()
-    #st.write(file, unsafe_allow_html=True)
-    #st.components.v1.html("cluster.html", width=2500, height=6000)
-        
+    components.html(HtmlFile.read(), width=1000, height=5000, scrolling=True)
+       
 st.set_page_config("Fit_Predict Final case solution")
 st.image("https://i.ibb.co/Vwhhs7J/image.png", width=150)
 
