@@ -9,6 +9,7 @@ import plotly_express as px
 import plotly.figure_factory as ff
 import scipy.cluster.hierarchy as sch
 from sklearn.manifold import TSNE
+import streamlit.components.v1 as components
 
 def get_table_download_link(df):
     csv = df.to_csv(index=False)
@@ -108,9 +109,11 @@ def hierarch(customers):
     fig.update_layout(width=800, height=1600, font_size=8)
     fig.show()
     plotly.offline.plot(fig, filename='cluster.html')
-    file = open("cluster.html", "r").read()
-    st.write(file, unsafe_allow_html=True)
-    #st.components.v1.html("cluster.html", width=150)
+    HtmlFile = open("cluster.html", 'r', encoding='utf-8')
+    components.html(HtmlFile.read())
+    #file = open("cluster.html", "r").read()
+    #st.write(file, unsafe_allow_html=True)
+    #st.components.v1.html("cluster.html", width=2500, height=6000)
         
 st.set_page_config("Fit_Predict Final case solution")
 st.image("https://i.ibb.co/Vwhhs7J/image.png", width=150)
