@@ -109,7 +109,7 @@ def hierarch(customers):
     fig.show()
     plotly.offline.plot(fig, filename='cluster.html')
         
-st.set_page_config("Fit_Prdeict Final case solution")
+st.set_page_config("Fit_Predict Final case solution")
 st.image("https://i.ibb.co/Vwhhs7J/image.png", width=150)
 
 # Title of the main page
