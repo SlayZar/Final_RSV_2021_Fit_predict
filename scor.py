@@ -108,7 +108,9 @@ def hierarch(customers):
     fig.update_layout(width=800, height=1600, font_size=8)
     fig.show()
     plotly.offline.plot(fig, filename='cluster.html')
-    st.image("cluster.html", width=150)
+    file = open("cluster.html", "r").read()
+    st.write(file, unsafe_allow_html=True)
+    #st.components.v1.html("cluster.html", width=150)
         
 st.set_page_config("Fit_Predict Final case solution")
 st.image("https://i.ibb.co/Vwhhs7J/image.png", width=150)
