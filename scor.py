@@ -9,7 +9,7 @@ import plotly_express as px
 import plotly.figure_factory as ff
 import scipy.cluster.hierarchy as sch
 from sklearn.manifold import TSNE
-import streamlit.components.v1 as components
+import streamlit.components.v1 as componentss
 from matplotlib import pyplot as pl
 
 import shap
@@ -114,8 +114,12 @@ def interpret(df):
                                        , min_value=0
                                        , max_value=df.shape[0]
                                        )
-    graph = lgb.create_tree_digraph(gbm, tree_index=ntree, name='Tree54')
-    st.graphviz_chart(graph)
+#     graph = lgb.create_tree_digraph(gbm, tree_index=ntree, name='Tree54')
+#     st.graphviz_chart(graph)
+
+
+
+
 #     tree=xgb.to_graphviz(loaded_model,num_trees=ntree)
 #     st.graphviz_chart(tree)
 #     importance_type = st.selectbox('Select the desired importance type', ('weight','gain','cover'),index=0)
