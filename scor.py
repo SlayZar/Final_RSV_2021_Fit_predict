@@ -99,20 +99,14 @@ def preproc(customers):
 def interpret(df):
     from config import MODEL_COLS, MODEL_PATH, TARGET_COL
     df = preproc(df)
+#     st.write(df[MODEL_COLS])
     clf = joblib.load('models/clf') #Закомментить
     df[TARGET_COL] = clf.predict(df[MODEL_COLS]) #Закомментить
     loaded_model_cb = CatBoostClassifier()
     loaded_model_cb.load_model('models/cb') 
+#     loaded_model = XGBClassifier()
+#     loaded_model.load_model(MODEL_PATH) 
     gbm = joblib.load('models/lightgbm')
-    
-    explainer = shap.TreeExplainer(loaded_model_cb)
-    shap_values = explainer.shap_values(df[MODEL_COLS])
-    pl.title('Assessing feature importance based on Shap values')
-    shap.summary_plot(shap_values,df[MODEL_COLS],plot_type="bar",show=False)
-    st.pyplot(bbox_inches='tight')
-    pl.clf()
-    expectation = explainer.expected_value
-    
     lgb_train = lgb.Dataset(df[MODEL_COLS], df[TARGET_COL])
 
     
@@ -134,7 +128,13 @@ def interpret(df):
 #     st.pyplot(bbox_inches='tight')
 #     pl.clf()
 #     st.write('To handle this inconsitency, SHAP values give robust details, among which is feature importance')
-
+    explainer = shap.TreeExplainer(loaded_model_cb)
+    shap_values = explainer.shap_values(df[MODEL_COLS])
+    pl.title('Assessing feature importance based on Shap values')
+    shap.summary_plot(shap_values,df[MODEL_COLS],plot_type="bar",show=False)
+    st.pyplot(bbox_inches='tight')
+    pl.clf()
+    expectation = explainer.expected_value
     individual = st.number_input('Select the desired record from the training set for detailed explanation.'
                                             , min_value=0
                                        , max_value=df.shape[0]
