@@ -114,8 +114,8 @@ def interpret(df):
                                        , min_value=0
                                        , max_value=df.shape[0]
                                        )
-#     graph = lgb.create_tree_digraph(gbm, tree_index=ntree, name='Tree54')
-#     st.graphviz_chart(graph)
+    graph = lgb.create_tree_digraph(gbm, tree_index=ntree, name='Tree54')
+    st.graphviz_chart(graph)
 
 
 
