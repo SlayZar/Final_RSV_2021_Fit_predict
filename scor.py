@@ -12,8 +12,6 @@ from sklearn.manifold import TSNE
 import streamlit.components.v1 as components
 from matplotlib import pyplot as pl
 
-import xgboost as xgb
-from xgboost import XGBClassifier
 import shap
 import lightgbm as lgb
 import joblib
