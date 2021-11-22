@@ -135,14 +135,14 @@ def interpret(df):
 #     pl.clf()
 #     st.write('To handle this inconsitency, SHAP values give robust details, among which is feature importance')
 
-#     individual = st.number_input('Select the desired record from the training set for detailed explanation.'
-#                                             , min_value=0
-#                                        , max_value=df.shape[0]
-#                                        )
+    individual = st.number_input('Select the desired record from the training set for detailed explanation.'
+                                            , min_value=0
+                                       , max_value=df.shape[0]
+                                       )
     predicted_values = loaded_model_cb.predict(df[MODEL_COLS])
     real_value = df[TARGET_COL]    
-    shap.force_plot(explainer.expected_value[0], shap_values[0][ntree], # Убрать нолики
-                    df[MODEL_COLS].iloc[ntree,:],matplotlib=True,show=False
+    shap.force_plot(explainer.expected_value[0], shap_values[0][individual], # Убрать нолики
+                    df[MODEL_COLS].iloc[individual,:],matplotlib=True,show=False
                     ,figsize=(16,5))
     st.pyplot(bbox_inches='tight',dpi=300,pad_inches=0)
     pl.clf()
