@@ -35,3 +35,5 @@ https://colab.research.google.com/drive/1rBO6iUHpPrhnM7p-FlTOPa6huwhYWd3-?usp=sh
 https://colab.research.google.com/drive/1EU3gNqhcvugnI6j9hngQ3T8aTZW5owjN?usp=sharing
 
 ![](/data/good_roc.png)
+
+<img src="/data/good_roc.png" width="200" />
