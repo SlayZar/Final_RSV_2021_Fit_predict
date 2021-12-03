@@ -43,24 +43,29 @@ def slider_feats(train, feat, target_col_name):
         pass
 
     
-def visualisation(df, numeric_columns, non_numeric_columns):
+def visualisation(df):
     chart_select = st.sidebar.selectbox(
         label="Выберите тип графиков",
         options=['Scatterplots', 'Lineplots', 'Histogram', 'Boxplot']
     )
-
+    cat_features = ['gamecategory', 'subgamecategory', 'oblast', 'city',  'phone_ver',  'day', 'weekday']
+    non_cat_features = ['os_android', 'timezone', 'hour', 'salary_rank',
+ 'salary_to_bucket', 'mean_salary', 'salary_change']
+    numeric_columns = ['day', 'weekday', 'bundle_point', 'bundle_up', 'os_android', 'timezone', 'hour', 'salary_rank',
+ 'salary_to_bucket', 'mean_salary', 'salary_change']
+    non_numeric_columns = ['Segment', 'gamecategory', 'subgamecategory', 'oblast', 'city',  'phone_ver', None]
     if chart_select == 'Scatterplots':
         st.sidebar.subheader("Scatterplot")
-        x_values = st.sidebar.selectbox('Ось X', options=numeric_columns)
-        y_values = st.sidebar.selectbox('Ось Y', options=numeric_columns)
+        x_values = st.sidebar.selectbox('Ось X', options=numeric_columns, index=0)
+        y_values = st.sidebar.selectbox('Ось Y', options=numeric_columns, index=6)
         color_value = st.sidebar.selectbox("Цвет", options=non_numeric_columns)
         plot = px.scatter(data_frame=df, x=x_values, y=y_values, color=color_value)
         # display the chart
         st.plotly_chart(plot)
     if chart_select == 'Lineplots':
         st.sidebar.subheader("Линейные графики")
-        x_values = st.sidebar.selectbox('Ось X', options=numeric_columns)
-        y_values = st.sidebar.selectbox('Ось Y', options=numeric_columns)
+        x_values = st.sidebar.selectbox('Ось X', options=numeric_columns, index=6)
+        y_values = st.sidebar.selectbox('Ось Y', options=numeric_columns, index=4)
         color_value = st.sidebar.selectbox("Цвет", options=non_numeric_columns)
         plot = px.line(data_frame=df.sort_values(by=x_values), x=x_values, y=y_values, color=color_value)
         st.plotly_chart(plot)
@@ -82,67 +87,82 @@ def visualisation(df, numeric_columns, non_numeric_columns):
         plot = px.box(data_frame=df, y=y, x=x, color=color_value)
         st.plotly_chart(plot)
     
-# if st.sidebar.button('Очистить кэш'):
-#     st.caching.clear_cache()
-
-# data_path = 'data/test.csv'
-# target_col_name = 'pred2_bin'
-
-def preproc(customers):
-    df = pd.pivot_table(customers, index = ['CustomerID'], columns = ['Gender'], 
-                    values = ['Age', 'Annual Income (k$)', 'Spending Score (1-100)'],
-                    aggfunc = 'mean').fillna(0)
-    df.columns = ['Female_age', 'Male_age', 'Female_income', 'Male_Income', 'Female_score', 'Male_score']
+@st.cache(suppress_st_warning=True)
+def preprocess(df_init):
+    df = df_init.copy()
+    df['bundle_point'] = df['bundle'].apply(lambda x: str(x).count('.'))
+    df['bundle_up'] = df['bundle'].apply(lambda x: sum(map(str.isupper, str(x))))
+    df['os'] = df['os'].apply(lambda x: str(x).lower())
+    df['os_android'] = (df['os'] == 'android')
+    df['timezone'] = df['shift'].apply(lambda x: str(x).split('+')[-1] if '+' in str(x) else 0)
+    df['timezone'] = pd.to_numeric(df['timezone'])
+    df['osv'] = df['osv'].apply(lambda x: str(x).replace('28', '9').replace('30', '11').replace('29', '10')\
+                            .replace('(', '. ').replace(' ', '.').replace('27', '8').replace('26', '7')\
+                            .replace('25', '6').replace('24', '5').replace('23', '4').replace('22', '3'))
+    df['phone_ver'] = df.apply(lambda x: str(x['os']) + '_' + str(x['osv']).split('.')[0], axis=1)
+    df['bundle_new'] = df['bundle'].apply(lambda x: str(x).replace('.com', '').replace('android','')\
+                                        .replace('com.', '').replace('.', ' ').replace('org', '')
+                                        )
+    df['hour'] = pd.to_datetime(df['created']).dt.hour
+    df['day'] = pd.to_datetime(df['created']).dt.day
+    cities = pd.read_excel('data/cities.xlsx', sheet_name='city')
+    df = df.merge(cities, on ='city', how='left')
+    cities = pd.read_excel('data/cities.xlsx', sheet_name='oblast')
+    df = df.merge(cities, on ='oblast', how='left')
+    df['calday'] = pd.to_datetime(df.created).dt.date
+    df.drop(['bundle', 'osv', 'shift', 'created', 'os'], axis=1, inplace=True)
+    df['weekday'] = pd.to_datetime(df['calday']).dt.dayofweek
+    for i in ['gamecategory', 'subgamecategory', 'oblast', 'city',
+                'phone_ver', 'hour', 'day']:
+        df[i] = df[i].fillna('NONE')
     return df
 
 
-def interpret(df):
-    from config import MODEL_COLS, MODEL_PATH, TARGET_COL
-    df = preproc(df)
-#     st.write(df[MODEL_COLS])
-    clf = joblib.load('models/clf') #Закомментить
-    df[TARGET_COL] = clf.predict(df[MODEL_COLS]) #Закомментить
-    loaded_model_cb = CatBoostClassifier()
-    loaded_model_cb.load_model('models/cb') 
-#     loaded_model = XGBClassifier()
-#     loaded_model.load_model(MODEL_PATH) 
-    gbm = joblib.load('models/lightgbm')
-    lgb_train = lgb.Dataset(df[MODEL_COLS], df[TARGET_COL])
+@st.cache(suppress_st_warning=True)
+def tfidf_feats(prep_df):
+    tfidf = joblib.load('models/tfidf')
+    new_df = tfidf.transform(prep_df['bundle_new'])
+    prep_df = prep_df.drop(['bundle_new'], axis=1)\
+              .merge(pd.DataFrame(new_df.toarray(), columns= tfidf.get_feature_names_out()),
+                left_index=True, right_index=True)
+    return prep_df
 
+
+@st.cache(suppress_st_warning=True)
+def get_shap(loaded_model_cb, df):
     explainer = shap.TreeExplainer(loaded_model_cb)
-    shap_values = explainer.shap_values(df[MODEL_COLS])
+    shap_values = explainer.shap_values(df)
+    return explainer, shap_values
+
+def interpret(df, model_number):
+    from config import TARGET_COL
+    loaded_model_cb = CatBoostClassifier()
+    loaded_model_cb.load_model(f'models/model_{model_number}') 
+    MODEL_COLS = joblib.load(f'models/cols_{model_number}') 
+    df = tfidf_feats(df)
+#     gbm = joblib.load('models/lightgbm')
+#     lgb_train = lgb.Dataset(df[MODEL_COLS], df[TARGET_COL])
+    explainer, shap_values = get_shap(loaded_model_cb, df[MODEL_COLS])
+
     pl.title('Assessing feature importance based on Shap values')
-    shap.summary_plot(shap_values,df[MODEL_COLS],plot_type="bar",show=False)
+    shap.summary_plot(shap_values, df[MODEL_COLS],plot_type="bar",show=False)
     st.pyplot(bbox_inches='tight')
     pl.clf()
-    
-    ntree=st.number_input('Select the desired record for detailed explanation on the training set'
-                                       , min_value=0
-                                       , max_value=df.shape[0]
-                                       )
-    graph = lgb.create_tree_digraph(gbm, tree_index=ntree, name='Tree54')
-    st.graphviz_chart(graph)
-
-
-
-
-#     tree=xgb.to_graphviz(loaded_model,num_trees=ntree)
-#     st.graphviz_chart(tree)
-#     importance_type = st.selectbox('Select the desired importance type', ('weight','gain','cover'),index=0)
-#     importance_plot = xgb.plot_importance(loaded_model,importance_type=importance_type)
-#     pl.title ('xgboost.plot_importance(best XGBoost model) importance type = '+ str(importance_type))
-#     st.pyplot(bbox_inches='tight')
-#     pl.clf()
-#     st.write('To handle this inconsitency, SHAP values give robust details, among which is feature importance')
-
-#     expectation = explainer.expected_value
-#     individual = st.number_input('Select the desired record from the training set for detailed explanation.'
-#                                             , min_value=0
-#                                        , max_value=df.shape[0]
+    ntree=st.number_input('Select the desired CustomerID for detailed explanation on the training set'
+                                      , min_value=0
+                                      , max_value=len(df)
+                                      )
+#     ntree=st.selectbox('Select the desired CustomerID for detailed explanation on the training set'
+#                                        , options=ntree
 #                                        )
+#     graph = lgb.create_tree_digraph(gbm, tree_index=ntree, name='Tree54')
+#     st.graphviz_chart(graph)
+
+
+
     predicted_values = loaded_model_cb.predict(df[MODEL_COLS])
     real_value = df[TARGET_COL]    
-    shap.force_plot(explainer.expected_value[0], shap_values[0][ntree], # Убрать нолики
+    shap.force_plot(explainer.expected_value, shap_values[ntree], # Убрать нолики
                     df[MODEL_COLS].iloc[ntree,:],matplotlib=True,show=False
                     ,figsize=(16,5))
     st.pyplot(bbox_inches='tight',dpi=300,pad_inches=0)
@@ -154,20 +174,36 @@ def interpret(df):
 def eda_func(df):
     if st.checkbox("Показать 10 строк датафрейма"):
         st.write(df.head(10))           
-
+    col1, col2 = st.sidebar.columns(2)
+    col1.image("https://i.ibb.co/Vwhhs7J/image.png", width=150)
+    col2.image("https://c.radikal.ru/c03/2111/60/dc02f41efa07.png", width=150)
     st.sidebar.subheader("Настройки визуализации")
     dropcols = ['CustomerID']
-    numeric_columns = list(set(df.select_dtypes(['float', 'int64']).columns).difference(dropcols))
-    non_numeric_columns = list(set(df.select_dtypes(['object']).columns).difference(dropcols))
-    non_numeric_columns.append(None)
+#     numeric_columns = list(set(df.select_dtypes(['float', 'int64']).columns).difference(dropcols))
+#     non_numeric_columns = list(set(df.select_dtypes(['object']).columns).difference(dropcols))
+#     non_numeric_columns.append(None)
     options2 = st.selectbox('Что хотим сделать?',
              ['Посмотреть зависимости (EDA)', 'Кластеризация', 'Интерпретация модели'], index=0)
     if options2 == 'Посмотреть зависимости (EDA)':
-        visualisation(df, numeric_columns, non_numeric_columns)
-    elif options2 == 'Кластеризация': 
-        hierarch(df)
+        visualisation(df)
+#     elif options2 == 'Кластеризация': 
+#         hierarch(df)
     elif options2 == 'Интерпретация модели': 
-        interpret(df)
+        model_number = st.selectbox('Выберите модель',
+             ['Сегм 1 (25-31 Ж)', 'Сегм 2 (25-42 М - Пиво)', 'Сегм 3 (25-43 Ж - Дети)', 
+              'Сегм 4 (18-44 МЖ - Животные)', 'Сегм 5 (18-45 МЖ)'], index=0)
+        if model_number == 'Сегм 1 (25-31 Ж)':
+            interpret(df, 1)
+        elif model_number == 'Сегм 2 (25-42 М - Пиво)':
+            interpret(df, 2)
+        elif model_number == 'Сегм 3 (25-43 Ж - Дети)':
+            interpret(df, 3)
+        elif model_number == 'Сегм 4 (18-44 МЖ - Животные)':
+            interpret(df, 4)
+        elif model_number == 'Сегм 5 (18-45 МЖ)':
+            interpret(df, 5)       
+        
+        
         
 def hierarch(customers):
     df = preproc(df)
@@ -183,24 +219,31 @@ def hierarch(customers):
     components.html(HtmlFile.read(), width=1000, height=5000, scrolling=True)
        
 st.set_page_config("Fit_Predict Final case solution")
-st.image("https://i.ibb.co/Vwhhs7J/image.png", width=150)
+col1, col2 = st.columns([3,1])
+col1.image("https://i.ibb.co/Vwhhs7J/image.png", width=150)
+col2.image("https://c.radikal.ru/c03/2111/60/dc02f41efa07.png", width=150)
 
 # Title of the main page
 st.title("Профилирование клиентов")   
      
 options = st.selectbox('Какие данные анализируем?',
-         ['Тестовый датасет', 'Загрузить новый датасет'], index=0)
+         ['Семпл данных', 'Загрузить новый датасет'], index=0)
 
-
+# if st.sidebar.button('Очистить кэш'):
+#     st.caching.clear_cache()
 # Считывание датафрейма
-if options == 'Тестовый датасет':
-    df = pd.read_csv('data/Mall_Customers.csv')
+if options == 'Семпл данных':
+    df = pd.read_csv('data/data_sample.csv')
+    st.write('Data processing...')
+    df = preprocess(df)
     eda_func(df)
 else:
     file_buffer = st.file_uploader(label = 'Выберите датасет')
     if file_buffer:
         try:
             df = pd.read_csv(file_buffer, encoding=None)
+            st.write('Data processing...')
+            df = preprocess(df)
             eda_func(df)
         except:
             st.write('Файл некорректен!')

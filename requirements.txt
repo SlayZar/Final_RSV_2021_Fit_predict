@@ -3,7 +3,7 @@ catboost == 1.0.3
 numpy == 1.20.0
 plotly == 5.3.0
 plotly_express == 0.4.1
-scikit-learn == 0.24.1 
+scikit-learn == 1.0.1 
 shap == 0.36.0
 matplotlib == 3.4.3
 lightgbm == 3.0.0
