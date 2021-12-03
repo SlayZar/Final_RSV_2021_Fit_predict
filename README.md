@@ -47,6 +47,12 @@ https://colab.research.google.com/drive/1EU3gNqhcvugnI6j9hngQ3T8aTZW5owjN?usp=sh
 
 ## Кластеризация
 
+https://colab.research.google.com/drive/1amo6H-v1nZherIQz3CL27dFLT8GBF4vI?usp=sharing
 
 ## Презентация
+
 https://docs.google.com/presentation/d/1KRlx6Urw1KaVmDWVdt-ahjXHzeYDYnrO3N6bTow_hlw/edit?usp=sharing
+
+## Демо
+
+https://share.streamlit.io/slayzar/final_rsv_2021_fit_predict/main/scor.py
