@@ -43,3 +43,10 @@ https://colab.research.google.com/drive/1EU3gNqhcvugnI6j9hngQ3T8aTZW5owjN?usp=sh
 
 
 <img src="/data/good_roc.png" width="500" />
+
+
+## Кластеризация
+
+
+## Презентация
+https://docs.google.com/presentation/d/1KRlx6Urw1KaVmDWVdt-ahjXHzeYDYnrO3N6bTow_hlw/edit?usp=sharing
