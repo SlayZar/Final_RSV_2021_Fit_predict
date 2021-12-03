@@ -88,52 +88,44 @@ def visualisation(df):
         st.plotly_chart(plot)
     
 @st.cache(suppress_st_warning=True)
-# Подготовка данных для моделей
 def preprocess(df_init):
-  df = df_init.copy()
-  df['bundle_point'] = df['bundle'].apply(lambda x: str(x).count('.'))
-  df['bundle_up'] = df['bundle'].apply(lambda x: sum(map(str.isupper, str(x))))
-  df['os'] = df['os'].apply(lambda x: str(x).lower())
-  df['os_android'] = (df['os'] == 'android')
-  df['timezone'] = df['shift'].apply(lambda x: str(x).split('+')[-1] if '+' in str(x) else 0)
-  df['timezone'] = pd.to_numeric(df['timezone'])
-  df['osv'] = df['osv'].apply(lambda x: str(x).replace('28', '9').replace('30', '11').replace('29', '10')\
+    df = df_init.copy()
+    df['bundle_point'] = df['bundle'].apply(lambda x: str(x).count('.'))
+    df['bundle_up'] = df['bundle'].apply(lambda x: sum(map(str.isupper, str(x))))
+    df['os'] = df['os'].apply(lambda x: str(x).lower())
+    df['os_android'] = (df['os'] == 'android')
+    df['timezone'] = df['shift'].apply(lambda x: str(x).split('+')[-1] if '+' in str(x) else 0)
+    df['timezone'] = pd.to_numeric(df['timezone'])
+    df['osv'] = df['osv'].apply(lambda x: str(x).replace('28', '9').replace('30', '11').replace('29', '10')\
                             .replace('(', '. ').replace(' ', '.').replace('27', '8').replace('26', '7')\
                             .replace('25', '6').replace('24', '5').replace('23', '4').replace('22', '3'))
-  df['phone_ver'] = df.apply(lambda x: str(x['os']) + '_' + str(x['osv']).split('.')[0], axis=1)
-  df['bundle_new'] = df['bundle'].apply(lambda x: str(x).replace('.com', '').replace('android','')\
+    df['phone_ver'] = df.apply(lambda x: str(x['os']) + '_' + str(x['osv']).split('.')[0], axis=1)
+    df['bundle_new'] = df['bundle'].apply(lambda x: str(x).replace('.com', '').replace('android','')\
                                         .replace('com.', '').replace('.', ' ').replace('org', '')
                                         )
-  df['hour'] = pd.to_datetime(df['created']).dt.hour
-  df['day'] = pd.to_datetime(df['created']).dt.day
-  cities = pd.read_excel('data/cities.xlsx', sheet_name='city')
-  df = df.merge(cities, on ='city', how='left')
-  cities = pd.read_excel('data/cities.xlsx', sheet_name='oblast')
-  df = df.merge(cities, on ='oblast', how='left')
-  df['calday'] = pd.to_datetime(df.created).dt.date
-  df.drop(['bundle', 'osv', 'shift', 'created', 'os'], axis=1, inplace=True)
-  df['weekday'] = pd.to_datetime(df['calday']).dt.dayofweek
-  for i in ['gamecategory', 'subgamecategory', 'oblast', 'city',
-              'phone_ver', 'hour']:
-    df[i] = df[i].fillna('NONE')
-  df['hour_real'] = df['hour'] - df['timezone'] + 3
-  return df
+    df['hour'] = pd.to_datetime(df['created']).dt.hour
+    df['day'] = pd.to_datetime(df['created']).dt.day
+    cities = pd.read_excel('data/cities.xlsx', sheet_name='city')
+    df = df.merge(cities, on ='city', how='left')
+    cities = pd.read_excel('data/cities.xlsx', sheet_name='oblast')
+    df = df.merge(cities, on ='oblast', how='left')
+    df['calday'] = pd.to_datetime(df.created).dt.date
+    df.drop(['bundle', 'osv', 'shift', 'created', 'os'], axis=1, inplace=True)
+    df['weekday'] = pd.to_datetime(df['calday']).dt.dayofweek
+    for i in ['gamecategory', 'subgamecategory', 'oblast', 'city',
+                'phone_ver', 'hour', 'day']:
+        df[i] = df[i].fillna('NONE')
+    return df
 
 
 @st.cache(suppress_st_warning=True)
-# Функция для tf-idf
-def tfidf_feats(prep_df, is_train = True, postfix = 'v3'):
-  if is_train:
-    tfidf = TfidfVectorizer(analyzer='word', max_features = 50, norm = 'l2', ngram_range=(1,3))
-    new_df = tfidf.fit_transform(prep_df['bundle_new'], prep_df['Segment'])
-    joblib.dump(tfidf, f'models/tfidf_{postfix}')
-  else:
-    tfidf = joblib.load(f'models/tfidf_{postfix}')
+def tfidf_feats(prep_df):
+    tfidf = joblib.load('models/tfidf')
     new_df = tfidf.transform(prep_df['bundle_new'])
-  prep_df = prep_df.drop(['bundle_new'], axis=1)\
+    prep_df = prep_df.drop(['bundle_new'], axis=1)\
               .merge(pd.DataFrame(new_df.toarray(), columns= tfidf.get_feature_names_out()),
                 left_index=True, right_index=True)
-  return prep_df
+    return prep_df
 
 
 @st.cache(suppress_st_warning=True)
@@ -143,12 +135,11 @@ def get_shap(loaded_model_cb, df):
     return explainer, shap_values
 
 def interpret(df, model_number):
-    from config import TARGET_COL, postfix
+    from config import TARGET_COL
     loaded_model_cb = CatBoostClassifier()
-    loaded_model_cb.load_model(f'models/model_{model_number}_{postfix}') 
-    MODEL_COLS =  loaded_model_cb.feature_names_
- #   MODEL_COLS = joblib.load(f'models/cols_{model_number}') 
-    df = tfidf_feats(df, is_train = False, postfix = postfix)
+    loaded_model_cb.load_model(f'models/model_{model_number}') 
+    MODEL_COLS = joblib.load(f'models/cols_{model_number}') 
+    df = tfidf_feats(df)
 #     gbm = joblib.load('models/lightgbm')
 #     lgb_train = lgb.Dataset(df[MODEL_COLS], df[TARGET_COL])
     explainer, shap_values = get_shap(loaded_model_cb, df[MODEL_COLS])
@@ -186,9 +177,6 @@ def eda_func(df):
     col1, col2 = st.sidebar.columns(2)
     col1.image("https://i.ibb.co/Vwhhs7J/image.png", width=150)
     col2.image("https://c.radikal.ru/c03/2111/60/dc02f41efa07.png", width=150)
-
-    if st.sidebar.button('Качество моделей'):
-        st.image("data/roc.png")
     st.sidebar.subheader("Настройки визуализации")
     dropcols = ['CustomerID']
 #     numeric_columns = list(set(df.select_dtypes(['float', 'int64']).columns).difference(dropcols))
@@ -198,12 +186,12 @@ def eda_func(df):
              ['Посмотреть зависимости (EDA)', 'Кластеризация', 'Интерпретация модели'], index=0)
     if options2 == 'Посмотреть зависимости (EDA)':
         visualisation(df)
-#     elif options2 == 'Кластеризация': 
-#         hierarch(df)
+    elif options2 == 'Кластеризация': 
+        hierarch(df)
     elif options2 == 'Интерпретация модели': 
         model_number = st.selectbox('Выберите модель',
-             ['Сегм 1 (25-31 Ж)', 'Сегм 2 (25-42 М - Пиво)', 'Сегм 3 (25-43 Ж - Дети)', 
-              'Сегм 4 (18-44 МЖ - Животные)', 'Сегм 5 (18-45 МЖ)'], index=0)
+             ['Сегмент 1 (25-31 Ж)', 'Сегмент 2 (25-42 М - Пиво)', 'Сегмент 3 (25-43 Ж - Дети)', 
+              'Сегмент 4 (18-44 МЖ - Животные)', 'Сегмент 5 (18-45 М и Ж)'], index=0)
         if model_number == 'Сегмент 1 (25-31 Ж)':
             interpret(df, 1)
         elif model_number == 'Сегмент 2 (25-42 М - Пиво)':
@@ -215,18 +203,28 @@ def eda_func(df):
         elif model_number == 'Сегмент 5 (18-45 М и Ж)':
             interpret(df, 5)       
         
-        
+def get_df_to_cluster(pred_df_train):
+  to_cluster = pred_df_train[['gamecategory', 'subgamecategory', 'timezone',
+                            'phone_ver']]
+  to_cluster['game_type'] = to_cluster.apply(lambda x: x['gamecategory'] + '_' +
+                  x['subgamecategory'], axis=1)
+  for i in ['phone_ver', 'game_type']:
+    to_cluster = to_cluster.merge(pd.get_dummies(to_cluster[i]), left_index=True,
+                                  right_index=True)
+    to_cluster.drop([i], axis=1, inplace=True)
+  to_cluster.drop(['gamecategory', 'subgamecategory'], axis=1, inplace=True)
+  return to_cluster
         
 def hierarch(customers):
-    df = preproc(df)
+    df = get_df_to_cluster(customers)
     X_embedded = TSNE(n_components=2, perplexity = 5, verbose = 0).fit_transform(df.to_numpy())
     vis_df = pd.DataFrame(X_embedded, index = df.index)
     fig = ff.create_dendrogram(np.array(vis_df[[0,1]]),
                                orientation='left',
                                linkagefun=lambda x: sch.linkage(np.array(vis_df[[0,1]]), "average"),)
     fig.update_layout(width=800, height=1600, font_size=8)
-    # fig.show()
-    # plotly.offline.plot(fig, filename='cluster.html')
+    fig.show()
+    plotly.offline.plot(fig, filename='cluster.html')
     HtmlFile = open("cluster.html", 'r', encoding='utf-8')
     components.html(HtmlFile.read(), width=1000, height=5000, scrolling=True)
        
@@ -241,6 +239,8 @@ st.title("Профилирование клиентов")
 options = st.selectbox('Какие данные анализируем?',
          ['Семпл данных', 'Загрузить новый датасет'], index=0)
 
+# if st.sidebar.button('Очистить кэш'):
+#     st.caching.clear_cache()
 # Считывание датафрейма
 if options == 'Семпл данных':
     df = pd.read_csv('data/data_sample.csv')
