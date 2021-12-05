@@ -1,4 +1,6 @@
-***Команда Fit_Predict; Кейс HyperAdTech. 2ое место***
+***Команда Fit_Predict***
+
+***Кейс HyperAdTech. 2ое место***
 
 ***@SlayZar, @colindonolwe, @mktoid***
 
