@@ -29,6 +29,12 @@ https://colab.research.google.com/drive/1rBO6iUHpPrhnM7p-FlTOPa6huwhYWd3-?usp=sh
 
 ### Модель с лучшим качеством на предоставленной выборке
 
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
+
 Сегмент 1: 0.9
 
 Сегмент 2: 0.95
