@@ -2,7 +2,7 @@
 
 *** Команда Fit_Predict***
 
-*** @vaskind, @colindonolwe, @mktoid ***
+***@SlayZar, @colindonolwe, @mktoid***
 
 - Фичи по зарплате в городе
 
