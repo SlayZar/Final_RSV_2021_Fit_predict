@@ -1,6 +1,6 @@
 # Определение профилей аудитории HyperAdTech
 
-*** Команда Fit_Predict***
+***Команда Fit_Predict***
 
 ***@SlayZar, @colindonolwe, @mktoid***
 
