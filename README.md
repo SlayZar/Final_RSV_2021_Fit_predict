@@ -1,8 +1,8 @@
-# Определение профилей аудитории HyperAdTech
-
 ***Команда Fit_Predict***
 
 ***@SlayZar, @colindonolwe, @mktoid***
+
+# Определение профилей аудитории HyperAdTech
 
 - Фичи по зарплате в городе
 
